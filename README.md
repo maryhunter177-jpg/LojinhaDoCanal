@@ -62,12 +62,12 @@ WhatsApp continuará restrito à exportação para postagem manual.
 
 ## Cópia de trabalho recuperada
 
-A cópia ativa está em `C:\Users\maryh\Projects\GrupoVendas`. O disco USB de `E:` apresentou falhas de comunicação nos eventos 129/153 do Windows; a pasta original foi preservada.
+A cópia ativa está em `D:\GrupoVendas`. O disco USB de `E:` apresentou falhas de comunicação nos eventos 129/153 do Windows; a pasta original foi preservada.
 
 Node e pnpm portáteis estão em `.tools` (fora do Git). Neste PowerShell:
 
 ```powershell
-cd C:\Users\maryh\Projects\GrupoVendas
+cd D:\GrupoVendas
 . .\scripts\Use-LocalTools.ps1
 pnpm typecheck
 pnpm lint
@@ -75,3 +75,5 @@ pnpm test
 ```
 
 As ferramentas portáteis são locais e não são distribuídas no código. Em outra máquina instale Node 22 e pnpm 10.18.3. `pnpm db:generate`, `pnpm db:migrate` e `pnpm db:seed` carregam o `.env` da raiz. Os testes de integração exigem PostgreSQL real; a validação desta entrega utilizou uma instância isolada em localhost.
+
+O cache de dependências fica em .pnpm-store no próprio projeto, configurado em .npmrc. As ferramentas locais usam caminhos relativos à pasta do projeto.
