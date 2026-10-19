@@ -1,0 +1,10 @@
+{
+  "private": true,
+  "name": "@ofertas/worker",
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "build": "tsc -p tsconfig.json"
+  }
+}
