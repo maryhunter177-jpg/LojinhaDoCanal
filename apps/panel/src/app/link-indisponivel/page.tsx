@@ -1,3 +1,4 @@
+import { MaryAvatar } from '@/components/mary-avatar';
 import Link from 'next/link';
 export const metadata = {
   title: 'Link em atualização — Lojinha da Mary Hunter',
@@ -6,7 +7,7 @@ export const metadata = {
 export default function LinkUnavailable() {
   return (
     <main className="loading-page">
-      <span className="brand-mark">✳</span>
+      <MaryAvatar size={72} />
       <span className="eyebrow">ESSA DESCOBERTA ESTÁ EM ATUALIZAÇÃO</span>
       <h1>Vamos encontrar outro achado?</h1>
       <p>

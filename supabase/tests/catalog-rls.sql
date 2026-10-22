@@ -86,10 +86,10 @@ do $$ declare changed integer; item_published boolean; item_updated timestamptz;
     update public.catalog_items set published = true where slug = 'fixture-amazon';
     raise exception 'Amazon published before approval';
   exception when check_violation then null; end;
-  begin
-    update public.catalog_items set published = true where slug = 'fixture-meli';
-    raise exception 'Mercado Livre published before approval';
-  exception when check_violation then null; end;
+  update public.catalog_items set published = true where slug = 'fixture-meli';
+  select published into item_published from public.catalog_items where slug = 'fixture-meli';
+  if not item_published then raise exception 'Mercado Livre publication not enabled'; end if;
+  update public.catalog_items set published = false where slug = 'fixture-meli';
   begin
     update public.catalog_items set price_cents = 12345 where slug = 'fixture-draft';
     raise exception 'price accepted without confirmation';

@@ -39,7 +39,7 @@ A lista de administradores fica no schema `private`, sem acesso dos papéis `ano
 - `published` inicia como `false`. `featured` inicia como `false`; `sort_order` inicia em zero. Um trigger mantém `updated_at` no servidor.
 - Imagem, link de afiliado, preço, nível, selo e confirmação podem ser nulos. `course_level` aceita `iniciante`, `intermediario` ou `avancado`, apenas para cursos. A descrição aceita até 5.000 caracteres. Imagens aceitam HTTPS ou caminhos locais em `/images/`, sem `..`, barras invertidas ou escapes percentuais.
 - `price_cents` é um inteiro não negativo em BRL. Preço preenchido exige `confirmed_at`: o instante em que a pessoa administradora verificou o preço na fonte. Não informe preço sem verificar; use nulo e apresente “Consultar preço”. O timestamp registra a conferência e não garante que o preço continuará válido.
-- Um item publicado exige link de afiliado e plataforma `hotmart` ou `shopee`. Amazon e Mercado Livre podem existir como rascunhos, mas a constraint bloqueia sua publicação enquanto a afiliação não estiver aprovada. A liberação futura exige uma migration revisada.
+- Após aplicar também `202610220002_enable_mercadolivre.sql`, um item publicado exige link de afiliado e plataforma `hotmart`, `shopee` ou `mercadolivre`. Amazon permanece restrita a rascunhos até aprovação.
 
 No TypeScript, os nomes correspondentes são `imageUrl`, `courseLevel` e `confirmedAt`; o banco usa `image_url`, `course_level` e `confirmed_at`.
 
@@ -47,12 +47,12 @@ No TypeScript, os nomes correspondentes são `imageUrl`, `courseLevel` e `confir
 
 O banco aceita apenas HTTPS, sem credenciais, portas explícitas ou espaços, nos hosts exatos abaixo. Subdomínios adicionais não são aceitos automaticamente.
 
-| Plataforma                      | Hosts                                              |
-| ------------------------------- | -------------------------------------------------- |
-| Hotmart                         | `hotmart.com`, `go.hotmart.com`, `pay.hotmart.com` |
-| Shopee                          | `shopee.com.br`, `s.shopee.com.br`, `shope.ee`     |
-| Amazon, somente rascunho        | `amazon.com.br`, `amzn.to`                         |
-| Mercado Livre, somente rascunho | `mercadolivre.com.br`, `meli.la`                   |
+| Plataforma               | Hosts                                              |
+| ------------------------ | -------------------------------------------------- |
+| Hotmart                  | `hotmart.com`, `go.hotmart.com`, `pay.hotmart.com` |
+| Shopee                   | `shopee.com.br`, `s.shopee.com.br`, `shope.ee`     |
+| Amazon, somente rascunho | `amazon.com.br`, `amzn.to`                         |
+| Mercado Livre            | `mercadolivre.com.br`, `meli.la`                   |
 
 A constraint valida a estrutura e o host; ela não consulta o destino de redirecionamentos nem comprova a afiliação. Cadastre somente links reais obtidos da conta afiliada aprovada. Confira o produto/curso, o destino e qualquer preço imediatamente antes de publicar. Toda apresentação pública deve conter o aviso “link de afiliado”. Não há seed com ofertas inventadas.
 
@@ -60,7 +60,7 @@ A constraint valida a estrutura e o host; ela não consulta o destino de redirec
 
 `anon` recebe apenas `SELECT`, restrito a linhas publicadas. `authenticated` recebe permissões de CRUD, mas as políticas RLS só autorizam alterações quando a sessão pertence a `private.catalog_admins`. Usuários autenticados comuns também só leem linhas publicadas. Administradores leem os rascunhos. Não há permissões de `TRUNCATE`, `REFERENCES` ou `TRIGGER` para clientes.
 
-Depois de aplicar, confira com clientes separados: visitante e usuário comum não veem rascunhos nem alteram itens; administrador cadastrado pode criar um rascunho, editar e excluir. Teste também que publicar sem link, publicar Amazon/Mercado Livre e gravar preço sem confirmação são rejeitados. Uma conexão `postgres` ignora RLS e não serve para provar isolamento entre usuários.
+Depois de aplicar, confira com clientes separados: visitante e usuário comum não veem rascunhos nem alteram itens; administrador cadastrado pode criar um rascunho, editar e excluir. Teste também que publicar sem link, publicar Amazon e gravar preço sem confirmação são rejeitados. Uma conexão `postgres` ignora RLS e não serve para provar isolamento entre usuários.
 
 Referências oficiais: [Row Level Security](https://supabase.com/docs/guides/database/postgres/row-level-security), [Database functions](https://supabase.com/docs/guides/database/functions) e [Securing your API](https://supabase.com/docs/guides/api/securing-your-api).
 

@@ -1,8 +1,6 @@
-import { getCatalogState } from '@/lib/catalog';
-import { Storefront } from '@/components/storefront';
-
+import { StorefrontPage } from '@/components/storefront-page';
 export const dynamic = 'force-dynamic';
-export default async function HomePage() {
-  const catalog = await getCatalogState();
-  return <Storefront items={catalog.items} source={catalog.source} />;
+export const metadata = { title: 'Lojinha do Canal — Mary Hunter' };
+export default function Page() {
+  return <StorefrontPage section="home" />;
 }

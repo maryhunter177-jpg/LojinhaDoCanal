@@ -104,12 +104,13 @@ function validate(
   if (
     value.published &&
     (value.affiliateUrl === null ||
-      !['hotmart', 'shopee'].includes(value.platform))
+      !['hotmart', 'shopee', 'mercadolivre'].includes(value.platform))
   )
     context.addIssue({
       code: z.ZodIssueCode.custom,
       path: ['published'],
-      message: 'Publicação exige link válido da Hotmart ou Shopee',
+      message:
+        'Publicação exige link válido da Hotmart, Shopee ou Mercado Livre',
     });
   if (value.priceCents !== null && value.confirmedAt === null)
     context.addIssue({

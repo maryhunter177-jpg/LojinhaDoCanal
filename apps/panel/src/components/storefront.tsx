@@ -3,6 +3,10 @@
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { MaryAvatar } from './mary-avatar';
+import { ThemeToggle } from './theme-toggle';
+import { LearningPaths } from './learning-paths';
+import { ShopHero, ShopDirectory, MarketplaceLogo } from './shop-branding';
 import {
   ArrowDown,
   ArrowRight,
@@ -27,11 +31,12 @@ import {
   getDisplayPriceCents,
   type CatalogItem,
   type CatalogPlatform,
+  type StorefrontSection,
 } from '@ofertas/core';
 
 type Kind = 'all' | 'course' | 'product';
 type Sort = 'featured' | 'newest' | 'price-asc' | 'price-desc';
-type Source = 'demo' | 'supabase' | 'unavailable';
+type Source = 'demo' | 'local' | 'supabase' | 'unavailable';
 const FAVORITES_KEY = 'mary-hunter:favorites:v1';
 const platformNames: Record<CatalogPlatform, string> = {
   hotmart: 'Hotmart',
@@ -52,20 +57,24 @@ const money = new Intl.NumberFormat('pt-BR', {
 export function Storefront({
   items,
   source,
+  section = 'home',
 }: {
   items: CatalogItem[];
   source: Source;
+  section?: StorefrontSection;
 }) {
-  const [kind, setKind] = useState<Kind>('all');
+  const isShop = section === 'shopee' || section === 'mercadolivre';
+  const isCoursePage = section === 'courses';
+  const [kind, setKind] = useState<Kind>(isShop ? 'product' : 'course');
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('all');
-  const [platform, setPlatform] = useState<'all' | CatalogPlatform>('all');
+  const platform = isShop ? section : 'hotmart';
   const [sort, setSort] = useState<Sort>('featured');
   const [saved, setSaved] = useState<string[]>([]);
   const [onlySaved, setOnlySaved] = useState(false);
   const [mobileMenu, setMobileMenu] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
-  const [visibleCount, setVisibleCount] = useState(8);
+  const [visibleCount, setVisibleCount] = useState(isShop ? 12 : 8);
   const [selected, setSelected] = useState<CatalogItem | null>(null);
   const [storageNotice, setStorageNotice] = useState(false);
   const [toast, setToast] = useState('');
@@ -73,6 +82,9 @@ export function Storefront({
   const searchRef = useRef<HTMLInputElement>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const deferredSearch = useDeferredValue(search);
+  const scopedSavedCount = items.filter((item) =>
+    saved.includes(item.id),
+  ).length;
 
   useEffect(() => {
     setNow(Date.now());
@@ -116,8 +128,6 @@ export function Storefront({
     return () => window.removeEventListener('keydown', shortcut);
   }, []);
 
-  const courseCount = items.filter((item) => item.kind === 'course').length;
-  const productCount = items.length - courseCount;
   const categories = useMemo(
     () => [
       ...new Set(
@@ -147,36 +157,27 @@ export function Storefront({
       now,
     ],
   );
-  const hasFilters = Boolean(
-    search ||
-      category !== 'all' ||
-      platform !== 'all' ||
-      onlySaved ||
-      kind !== 'all',
-  );
+  const hasFilters = Boolean(search || category !== 'all' || onlySaved);
   const headline = onlySaved
-    ? 'Suas descobertas favoritas.'
+    ? 'Seus favoritos desta página.'
     : kind === 'course'
       ? 'Um novo conhecimento te espera.'
       : kind === 'product'
-        ? 'Pequenos upgrades. Novas possibilidades.'
+        ? `Achadinhos da ${platformNames[platform]}.`
         : 'Sua próxima descoberta.';
 
-  function explore(next: Kind, favorites = false) {
-    setKind(next);
+  function explore(favorites = false) {
+    setKind(isShop ? 'product' : 'course');
     setCategory('all');
-    setPlatform('all');
     setOnlySaved(favorites);
     setMobileMenu(false);
-    setVisibleCount(8);
-    document
-      .getElementById('explorar')
-      ?.scrollIntoView({
-        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
-          ? 'instant'
-          : 'smooth',
-        block: 'start',
-      });
+    setVisibleCount(isShop ? 12 : 8);
+    document.getElementById('explorar')?.scrollIntoView({
+      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
+        ? 'instant'
+        : 'smooth',
+      block: 'start',
+    });
   }
   function toggleFavorite(item: CatalogItem) {
     const next = saved.includes(item.id)
@@ -197,22 +198,19 @@ export function Storefront({
   function clearFilters() {
     setSearch('');
     setCategory('all');
-    setPlatform('all');
     setOnlySaved(false);
-    setKind('all');
-    setVisibleCount(8);
+    setKind(isShop ? 'product' : 'course');
+    setVisibleCount(isShop ? 12 : 8);
   }
   function hasLiveLink(item: CatalogItem) {
-    return (
-      source === 'supabase' && item.published && item.affiliateUrl !== null
-    );
+    return item.published && item.affiliateUrl !== null;
   }
   function itemPrice(item: CatalogItem) {
     return now === undefined ? null : getDisplayPriceCents(item, now);
   }
 
   return (
-    <>
+    <div className={`storefront-shell shell-${section}`}>
       <div className="announcement">
         <span className="announcement-star">✳</span> O cantinho de descobertas
         da nossa comunidade <span className="announcement-heart">♡</span>
@@ -222,38 +220,54 @@ export function Storefront({
           <Link
             className="brand"
             href="/"
-            aria-label="Lojinha do Canal Mary Hunter — início"
+            aria-label={
+              isCoursePage
+                ? 'Mary Hunter — início'
+                : 'Lojinha do Canal Mary Hunter — início'
+            }
           >
-            <span className="brand-icon">✳</span>
+            <MaryAvatar size={42} className="brand-avatar" decorative />
             <span>
               <strong>
                 Mary Hunter<span className="brand-dot">.</span>
               </strong>
-              <small>LOJINHA DO CANAL</small>
+              <small>
+                {isCoursePage ? 'CURSOS DO CANAL' : 'LOJINHA DO CANAL'}
+              </small>
             </span>
           </Link>
           <nav
             className={`main-nav ${mobileMenu ? 'is-open' : ''}`}
             aria-label="Navegação principal"
           >
-            <button
-              className={!onlySaved && kind === 'all' ? 'nav-active' : ''}
-              onClick={() => explore('all')}
+            <Link
+              href="/"
+              className={section === 'home' ? 'nav-active' : ''}
+              aria-current={section === 'home' ? 'page' : undefined}
             >
-              Explorar
-            </button>
-            <button
-              className={!onlySaved && kind === 'course' ? 'nav-active' : ''}
-              onClick={() => explore('course')}
+              Início
+            </Link>
+            <Link
+              href="/cursos"
+              className={section === 'courses' ? 'nav-active' : ''}
+              aria-current={section === 'courses' ? 'page' : undefined}
             >
-              Cursos <span className="nav-dot" />
-            </button>
-            <button
-              className={!onlySaved && kind === 'product' ? 'nav-active' : ''}
-              onClick={() => explore('product')}
+              Cursos
+            </Link>
+            <Link
+              href="/shopee"
+              className={section === 'shopee' ? 'nav-active' : ''}
+              aria-current={section === 'shopee' ? 'page' : undefined}
             >
-              Achadinhos
-            </button>
+              Shopee
+            </Link>
+            <Link
+              href="/mercado-livre"
+              className={section === 'mercadolivre' ? 'nav-active' : ''}
+              aria-current={section === 'mercadolivre' ? 'page' : undefined}
+            >
+              Mercado Livre
+            </Link>
             <a
               href="https://www.youtube.com/@maryhunteroficial"
               target="_blank"
@@ -263,14 +277,15 @@ export function Storefront({
             </a>
           </nav>
           <div className="nav-actions">
+            <ThemeToggle />
             <button
               className={`saved-button ${onlySaved ? 'selected' : ''}`}
-              onClick={() => explore('all', !onlySaved)}
-              aria-label={`Ver favoritos, ${saved.length} itens salvos`}
+              onClick={() => explore(!onlySaved)}
+              aria-label={`Ver favoritos desta página, ${scopedSavedCount} itens salvos`}
             >
               <Heart size={18} />
               <span>Salvos</span>
-              {saved.length > 0 && <b>{saved.length}</b>}
+              {scopedSavedCount > 0 && <b>{scopedSavedCount}</b>}
             </button>
             <span className="nav-divider" />
             <a
@@ -293,128 +308,161 @@ export function Storefront({
           </div>
         </div>
       </header>
-      <main id="conteudo">
-        <section className="hero page-width" aria-labelledby="hero-title">
-          <div className="hero-copy">
-            <div className="eyebrow">
-              <span className="tiny-star">✳</span> DA LIVE PARA O SEU DIA A DIA
-            </div>
-            <h1 id="hero-title">
-              Seu <em>próximo nível</em>
-              <br />
-              começa por aqui<span className="hero-period">.</span>
-            </h1>
-            <p>
-              Aprender algo novo. Dar um upgrade no setup.
-              <br className="desktop-break" /> Aqui tem um pouco de tudo que a
-              gente curte.
-            </p>
-            <div className="hero-buttons">
-              <button
-                className="button primary"
-                onClick={() => explore('course')}
-              >
-                Explorar cursos <ArrowUpRight size={18} />
-              </button>
-              <button
-                className="button secondary"
-                onClick={() => explore('product')}
-              >
-                Ver achadinhos <ArrowRight size={17} />
-              </button>
-            </div>
-            <div className="hero-signature">
-              <span className="mini-avatar">mh</span>
-              <span>
-                Uma seleção da <strong>Mary, para a comunidade.</strong>
-              </span>
-              <span className="signature-scribble">♡</span>
-            </div>
-          </div>
-          <div
-            className="hero-art"
-            aria-label="Ilustração de um editor de código e acessórios de setup"
-            role="img"
-          >
-            <div className="art-orbit orbit-one" />
-            <div className="art-orbit orbit-two" />
-            <div className="art-grid" />
-            <span className="art-spark spark-one">✳</span>
-            <span className="art-spark spark-two">+</span>
-            <div className="editor-window">
-              <div className="editor-toolbar">
-                <div className="window-dots">
-                  <i />
-                  <i />
-                  <i />
-                </div>
-                <span>minha_proxima_versao.py</span>
-                <Code2 size={14} />
+      <main id="conteudo" className={`storefront-view view-${kind}`}>
+        {isShop ? (
+          <ShopHero shop={section} items={items} />
+        ) : (
+          <section className="hero page-width" aria-labelledby="hero-title">
+            <div className="hero-copy">
+              <div className="eyebrow">
+                <span className="tiny-star">✳</span>{' '}
+                {isCoursePage
+                  ? 'APRENDA. PRATIQUE. CRIE.'
+                  : 'DA LIVE PARA O SEU DIA A DIA'}
               </div>
-              <div className="editor-body">
-                <span className="code-comment"># um passo de cada vez</span>
-                <div>
-                  <span className="line-number">01</span>
-                  <span className="code-purple">def</span>{' '}
-                  <span className="code-yellow">proximo_nivel</span>():
-                </div>
-                <div>
-                  <span className="line-number">02</span>
-                  <span className="code-indent">
-                    aprender = <span className="code-purple">True</span>
-                  </span>
-                </div>
-                <div>
-                  <span className="line-number">03</span>
-                  <span className="code-indent">
-                    criar = <span className="code-purple">True</span>
-                  </span>
-                </div>
-                <div>
-                  <span className="line-number">04</span>
-                  <span className="code-indent code-green">
-                    return &quot;vamos nessa!&quot;
-                  </span>
-                </div>
-                <div className="editor-output">
-                  <span>❯</span> Olá, novas possibilidades!{' '}
-                  <span className="code-cursor" />
-                </div>
+              <h1 id="hero-title">
+                Seu <em>próximo nível</em>
+                <br />
+                começa por aqui<span className="hero-period">.</span>
+              </h1>
+              <p>
+                {isCoursePage ? (
+                  <>
+                    Programação, desenvolvimento de jogos e dados.
+                    <br className="desktop-break" />
+                    Escolha sua trilha e aprenda um passo de cada vez.
+                  </>
+                ) : (
+                  <>
+                    Aprender algo novo. Dar um upgrade no setup.
+                    <br className="desktop-break" />
+                    Aqui tem um pouco de tudo que a gente curte.
+                  </>
+                )}
+              </p>
+              <div className="hero-buttons">
+                <Link href="/cursos#explorar" className="button primary">
+                  Explorar cursos <ArrowUpRight size={18} />
+                </Link>
+                <a
+                  href={isCoursePage ? '#trilhas' : '#lojas'}
+                  className="button secondary"
+                >
+                  {isCoursePage ? 'Ver trilhas de estudo' : 'Escolher uma loja'}{' '}
+                  <ArrowRight size={17} />
+                </a>
               </div>
-              <div className="editor-status">
+              <div className="hero-signature">
+                <MaryAvatar size={30} className="signature-avatar" decorative />
                 <span>
-                  <i /> all good
+                  Uma seleção da <strong>Mary, para a comunidade.</strong>
                 </span>
-                <span>Python · UTF-8</span>
+                <span className="signature-scribble">♡</span>
               </div>
             </div>
-            <div className="floating-tag">
-              <span>
-                <Sparkles size={17} />
-              </span>
-              <div>
-                <b>Pequenas descobertas.</b>
-                <small>Grandes possibilidades.</small>
+            <div
+              className="hero-art has-avatar"
+              aria-label="Avatar gamer da Mary Hunter com seu setup e um editor de código"
+              role="img"
+            >
+              <div className="art-orbit orbit-one" />
+              <div className="art-orbit orbit-two" />
+              <div className="art-grid" />
+              <div className="hero-avatar-portrait">
+                <Image
+                  src="/images/mary-gamer.png"
+                  alt="Mary Hunter com headset, boné e controle de videogame"
+                  width={1024}
+                  height={1536}
+                  sizes="(max-width: 640px) 240px, 300px"
+                  preload
+                />
               </div>
-              <ArrowUpRight size={20} />
+              <span className="art-spark spark-one">✳</span>
+              <span className="art-spark spark-two">+</span>
+              <div className="editor-window">
+                <div className="editor-toolbar">
+                  <div className="window-dots">
+                    <i />
+                    <i />
+                    <i />
+                  </div>
+                  <span>minha_proxima_versao.py</span>
+                  <Code2 size={14} />
+                </div>
+                <div className="editor-body">
+                  <span className="code-comment"># um passo de cada vez</span>
+                  <div>
+                    <span className="line-number">01</span>
+                    <span className="code-purple">def</span>{' '}
+                    <span className="code-yellow">proximo_nivel</span>():
+                  </div>
+                  <div>
+                    <span className="line-number">02</span>
+                    <span className="code-indent">
+                      aprender = <span className="code-purple">True</span>
+                    </span>
+                  </div>
+                  <div>
+                    <span className="line-number">03</span>
+                    <span className="code-indent">
+                      criar = <span className="code-purple">True</span>
+                    </span>
+                  </div>
+                  <div>
+                    <span className="line-number">04</span>
+                    <span className="code-indent code-green">
+                      return &quot;vamos nessa!&quot;
+                    </span>
+                  </div>
+                  <div className="editor-output">
+                    <span>❯</span> Olá, novas possibilidades!{' '}
+                    <span className="code-cursor" />
+                  </div>
+                </div>
+                <div className="editor-status">
+                  <span>
+                    <i /> all good
+                  </span>
+                  <span>Python · UTF-8</span>
+                </div>
+              </div>
+              <div className="floating-tag">
+                <span>
+                  <Sparkles size={17} />
+                </span>
+                <div>
+                  <b>Pequenas descobertas.</b>
+                  <small>Grandes possibilidades.</small>
+                </div>
+                <ArrowUpRight size={20} />
+              </div>
+              <div className="art-keycap">
+                esc<small>da rotina</small>
+              </div>
             </div>
-            <div className="art-keycap">
-              esc<small>da rotina</small>
-            </div>
-            <span className="art-caption">LEARN. PLAY. REPEAT.</span>
-          </div>
-        </section>
+          </section>
+        )}
         <div className="values-strip page-width">
           <span>
             <BookOpen size={17} /> Conhecimento para levar com você
           </span>
           <span>
-            <ShoppingBag size={17} /> Achados para o seu universo
+            {isCoursePage ? (
+              <>
+                <Code2 size={17} /> Do primeiro código ao seu projeto
+              </>
+            ) : (
+              <>
+                <ShoppingBag size={17} /> Achados para o seu universo
+              </>
+            )}
           </span>
           <span>
             <Heart size={17} /> Da Mary, com carinho
           </span>
         </div>
+        {section === 'home' && <ShopDirectory />}
         <section
           id="explorar"
           className="catalog-section page-width"
@@ -422,53 +470,31 @@ export function Storefront({
         >
           <div className="section-top">
             <div>
-              <span className="eyebrow">A LOJINHA TÁ ABERTA</span>
+              <span className="eyebrow">
+                {isCoursePage
+                  ? 'CONHECIMENTO PARA O SEU PRÓXIMO PASSO'
+                  : 'A LOJINHA TÁ ABERTA'}
+              </span>
               <h2 id="catalog-heading">{headline}</h2>
             </div>
             <span className="section-note">
-              Pra aprender, criar e se divertir <span>↗</span>
+              {isShop
+                ? `Curadoria Mary Hunter · ${platformNames[platform]}`
+                : 'Pra aprender, criar e se divertir'}{' '}
+              <span>↗</span>
             </span>
           </div>
           <div className="catalog-toolbar">
-            <div className="kind-tabs" aria-label="Tipo de descoberta">
-              {(
-                [
-                  {
-                    value: 'all',
-                    label: 'Tudo',
-                    Icon: Sparkles,
-                    count: items.length,
-                  },
-                  {
-                    value: 'course',
-                    label: 'Cursos',
-                    Icon: BookOpen,
-                    count: courseCount,
-                  },
-                  {
-                    value: 'product',
-                    label: 'Achadinhos',
-                    Icon: ShoppingBag,
-                    count: productCount,
-                  },
-                ] as const
-              ).map(({ value, label, Icon, count }) => (
-                <button
-                  key={value}
-                  className={kind === value ? 'active' : ''}
-                  aria-pressed={kind === value}
-                  onClick={() => {
-                    setKind(value);
-                    setCategory('all');
-                    setVisibleCount(8);
-                    setOnlySaved(false);
-                  }}
-                >
-                  <Icon size={16} />
-                  {label}
-                  <span>{count}</span>
-                </button>
-              ))}
+            <div className="catalog-scope">
+              {isShop ? (
+                <MarketplaceLogo shop={section} />
+              ) : (
+                <BookOpen size={20} />
+              )}
+              <span>
+                {items.length}{' '}
+                {isShop ? 'produtos nesta loja' : 'cursos para explorar'}
+              </span>
             </div>
             <div className="search-tools">
               <label className="catalog-search">
@@ -478,9 +504,13 @@ export function Storefront({
                   value={search}
                   onChange={(event) => {
                     setSearch(event.target.value);
-                    setVisibleCount(8);
+                    setVisibleCount(isShop ? 12 : 8);
                   }}
-                  placeholder="O que você quer descobrir?"
+                  placeholder={
+                    isShop
+                      ? `Buscar na ${platformNames[platform]}`
+                      : 'Qual curso você quer encontrar?'
+                  }
                   aria-label="Buscar cursos e produtos"
                 />
                 {search ? (
@@ -504,6 +534,58 @@ export function Storefront({
               </button>
             </div>
           </div>
+          {!isShop && kind !== 'all' && (
+            <div className={`collection-banner collection-${kind}`}>
+              <div className="collection-symbol" aria-hidden="true">
+                {kind === 'course' ? (
+                  <Code2 size={34} />
+                ) : (
+                  <ShoppingBag size={34} />
+                )}
+              </div>
+              <div className="collection-copy">
+                <span className="collection-label">
+                  {kind === 'course'
+                    ? 'MARY HUNTER / LEARNING LAB'
+                    : 'MARY HUNTER / SETUP & ACHADOS'}
+                </span>
+                <h3>
+                  {kind === 'course'
+                    ? 'Seu próximo projeto começa com conhecimento.'
+                    : 'Escolhas que dão personalidade ao seu setup.'}
+                </h3>
+                <p>
+                  {kind === 'course'
+                    ? 'Explore programação, desenvolvimento e dados. Encontre o tema e o nível para continuar aprendendo.'
+                    : 'Periféricos, áudio e detalhes para jogar, criar e deixar seu cantinho com a sua cara.'}
+                </p>
+                <div className="collection-topics">
+                  {kind === 'course' ? (
+                    <>
+                      <span>01 / Fundamentos</span>
+                      <span>02 / Desenvolvimento</span>
+                      <span>03 / Dados</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Periféricos</span>
+                      <span>Áudio & vídeo</span>
+                      <span>Seu cantinho</span>
+                    </>
+                  )}
+                </div>
+              </div>
+              <MaryAvatar
+                size={88}
+                variant={kind === 'course' ? 'portrait' : 'community'}
+                className="collection-avatar"
+                decorative
+              />
+            </div>
+          )}
+          {kind !== 'product' && !onlySaved && source !== 'unavailable' && (
+            <LearningPaths items={items} onSelect={setSelected} />
+          )}
           <div className="category-row" aria-label="Categorias">
             <button
               className={category === 'all' ? 'active' : ''}
@@ -517,7 +599,7 @@ export function Storefront({
                 className={category === name ? 'active' : ''}
                 onClick={() => {
                   setCategory(name);
-                  setVisibleCount(8);
+                  setVisibleCount(isShop ? 12 : 8);
                 }}
               >
                 {name}
@@ -527,33 +609,17 @@ export function Storefront({
           {showFilters && (
             <div className="expanded-filters">
               <label>
-                Plataforma
-                <select
-                  aria-label="Filtrar por plataforma"
-                  value={platform}
-                  onChange={(event) =>
-                    setPlatform(event.target.value as 'all' | CatalogPlatform)
-                  }
-                >
-                  <option value="all">Todas as plataformas</option>
-                  <option value="hotmart">Hotmart</option>
-                  <option value="shopee">Shopee</option>
-                  <option disabled value="amazon">
-                    Amazon — em breve
-                  </option>
-                  <option disabled value="mercadolivre">
-                    Mercado Livre — em breve
-                  </option>
-                </select>
-              </label>
-              <label>
                 Ordenar por
                 <select
                   aria-label="Ordenar descobertas"
                   value={sort}
                   onChange={(event) => setSort(event.target.value as Sort)}
                 >
-                  <option value="featured">Destaques da lojinha</option>
+                  <option value="featured">
+                    {isCoursePage
+                      ? 'Destaques dos cursos'
+                      : 'Destaques da lojinha'}
+                  </option>
                   <option value="newest">Mais recentes</option>
                   <option value="price-asc">Menor preço confirmado</option>
                   <option value="price-desc">Maior preço confirmado</option>
@@ -573,9 +639,9 @@ export function Storefront({
             <div className="preview-note">
               <span className="preview-dot" />
               <p>
-                <strong>Uma prévia da lojinha.</strong> Cursos e produtos
-                ilustrativos; os links de afiliada serão adicionados antes da
-                abertura.
+                <strong>Uma prévia da lojinha.</strong> Alguns itens ainda são
+                prévias ilustrativas e estão sem link de compra. Os itens com
+                botão de compra já têm link de afiliado.
               </p>
               <span>PRÉVIA</span>
             </div>
@@ -590,7 +656,7 @@ export function Storefront({
             <span aria-live="polite">
               {filtered.length}{' '}
               {filtered.length === 1 ? 'descoberta' : 'descobertas'}
-              {onlySaved ? ' salvas' : ''}
+              {onlySaved ? ' salvas nesta página' : ''}
               {search ? ` para “${search}”` : ' esperando por você'}
             </span>
             {hasFilters ? (
@@ -636,9 +702,14 @@ export function Storefront({
               </button>
             </div>
           ) : (
-            <div className="product-grid">
+            <div
+              className={`product-grid ${filtered.length === 1 ? 'single-result' : ''}`}
+            >
               {filtered.slice(0, visibleCount).map((item) => (
-                <article className="catalog-card" key={item.id}>
+                <article
+                  className={`catalog-card card-${item.kind}`}
+                  key={item.id}
+                >
                   <div className={`card-image ${item.kind}`}>
                     <button
                       className="card-image-button"
@@ -734,6 +805,19 @@ export function Storefront({
                         <ArrowUpRight size={20} />
                       </button>
                     </div>
+                    {hasLiveLink(item) && (
+                      <a
+                        className="button primary card-buy-link"
+                        href={`/go/${item.slug}`}
+                        target="_blank"
+                        rel="sponsored nofollow noopener noreferrer"
+                      >
+                        {isCoursePage
+                          ? 'Conhecer o curso'
+                          : 'Clique aqui para comprar'}{' '}
+                        <ExternalLink size={15} />
+                      </a>
+                    )}
                     <div className="card-disclosure">
                       {hasLiveLink(item)
                         ? 'link de afiliado · compra na plataforma'
@@ -757,56 +841,64 @@ export function Storefront({
               </span>
             </div>
           )}
-          <div className="marketplaces">
-            <span>BOAS DESCOBERTAS, EM BOAS COMPANHIAS</span>
-            <div>
-              <b className="market-hotmart">◉ hotmart</b>
-              <b className="market-shopee">
-                <ShoppingBag size={21} /> Shopee
-              </b>
-              <span className="market-soon">
-                amazon<small>em breve</small>
-              </span>
-              <span className="market-soon ml-name">
-                mercado livre<small>em breve</small>
-              </span>
+          {!isCoursePage && (
+            <div className="marketplaces marketplace-links">
+              <span>BOAS DESCOBERTAS, EM BOAS COMPANHIAS</span>
+              <div>
+                <b className="market-hotmart">◉ hotmart</b>
+                <Link href="/shopee" aria-label="Visitar lojinha Shopee">
+                  <MarketplaceLogo shop="shopee" />
+                </Link>
+                <span className="market-soon">
+                  amazon<small>em breve</small>
+                </span>
+                <Link
+                  href="/mercado-livre"
+                  aria-label="Visitar lojinha Mercado Livre"
+                >
+                  <MarketplaceLogo shop="mercadolivre" />
+                </Link>
+              </div>
             </div>
-          </div>
+          )}
         </section>
-        <section className="community-banner page-width">
-          <div className="community-icon">
-            <Play size={28} fill="currentColor" />
-          </div>
-          <div className="community-copy">
-            <span className="eyebrow">A GENTE SE ENCONTRA NO CANAL</span>
-            <h2>
-              A live acaba.
-              <br />A comunidade <em>continua.</em>
-            </h2>
-            <p>
-              Games, programação, conversas e um monte de descobertas.
-              <br />
-              Chega mais. Esse cantinho também é seu.
-            </p>
-          </div>
-          <a
-            className="button community-button"
-            href="https://www.youtube.com/@maryhunteroficial"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Conhecer o canal <ArrowUpRight size={18} />
-          </a>
-          <span className="community-spark" aria-hidden="true">
-            ✳
-          </span>
-        </section>
+        {!isCoursePage && (
+          <section className="community-banner page-width">
+            <div className="community-icon community-avatar">
+              <MaryAvatar size={120} variant="community" decorative />
+            </div>
+            <div className="community-copy">
+              <span className="eyebrow">A GENTE SE ENCONTRA NO CANAL</span>
+              <h2>
+                A live acaba.
+                <br />A comunidade <em>continua.</em>
+              </h2>
+              <p>
+                Games, programação, conversas e um monte de descobertas.
+                <br />
+                Chega mais. Esse cantinho também é seu.
+              </p>
+            </div>
+            <a
+              className="button community-button"
+              href="https://www.youtube.com/@maryhunteroficial"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Conhecer o canal <ArrowUpRight size={18} />
+            </a>
+            <span className="community-spark" aria-hidden="true">
+              ✳
+            </span>
+          </section>
+        )}
         <div className="affiliate-note page-width">
           <Heart size={17} />
           <p>
-            <strong>Transparência faz parte.</strong> Alguns links são de
-            afiliada: ao comprar por eles, você pode apoiar o canal sem pagar a
-            mais. Preços e disponibilidade são confirmados na plataforma.
+            <strong>Transparência faz parte.</strong>{' '}
+            {isCoursePage
+              ? 'Os cursos usam links de afiliado. Ao se inscrever por eles, você pode apoiar o canal sem pagar a mais. Confira o conteúdo, o preço e as condições na plataforma do curso.'
+              : 'Alguns links são de afiliada: ao comprar por eles, você pode apoiar o canal sem pagar a mais. Preços e disponibilidade são confirmados na plataforma.'}
           </p>
           <Link href="/privacidade">
             Saiba mais <ChevronRight size={14} />
@@ -815,12 +907,14 @@ export function Storefront({
       </main>
       <footer className="site-footer page-width">
         <Link className="brand footer-brand" href="/">
-          <span className="brand-icon">✳</span>
+          <MaryAvatar size={42} className="brand-avatar" decorative />
           <span>
             <strong>
               Mary Hunter<span className="brand-dot">.</span>
             </strong>
-            <small>LOJINHA DO CANAL</small>
+            <small>
+              {isCoursePage ? 'CURSOS DO CANAL' : 'LOJINHA DO CANAL'}
+            </small>
           </span>
         </Link>
         <span>
@@ -905,7 +999,7 @@ export function Storefront({
                   >
                     {selected.kind === 'course'
                       ? 'Conhecer o curso'
-                      : `Ver na ${platformNames[selected.platform]}`}{' '}
+                      : 'Clique aqui para comprar'}{' '}
                     <ExternalLink size={17} />
                   </a>
                 ) : (
@@ -938,6 +1032,6 @@ export function Storefront({
           </div>
         )}
       </dialog>
-    </>
+    </div>
   );
 }

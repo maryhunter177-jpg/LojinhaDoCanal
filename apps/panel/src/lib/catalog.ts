@@ -5,11 +5,11 @@ import {
   type CatalogItem,
 } from '@ofertas/core';
 import pino from 'pino';
-import { demoCatalog } from './demo-catalog';
+import { curatedCatalog } from './curated-catalog';
 import { createServerSupabaseClient } from './supabase/server';
 
 export interface CatalogState {
-  source: 'demo' | 'supabase' | 'unavailable';
+  source: 'demo' | 'local' | 'supabase' | 'unavailable';
   items: CatalogItem[];
 }
 
@@ -49,7 +49,10 @@ export async function getCatalogState(): Promise<CatalogState> {
       !config.NEXT_PUBLIC_SUPABASE_URL &&
       !config.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
     ) {
-      return { source: 'demo', items: demoCatalog };
+      return {
+        source: 'local',
+        items: curatedCatalog,
+      };
     }
     const client = await createServerSupabaseClient();
     if (!client) throw new Error('Supabase client unavailable');

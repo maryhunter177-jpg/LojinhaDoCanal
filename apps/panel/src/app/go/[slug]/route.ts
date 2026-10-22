@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { isAllowedAffiliateUrl } from '@ofertas/core';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import pino from 'pino';
+import { curatedCatalog } from '@/lib/curated-catalog';
 
 export const dynamic = 'force-dynamic';
 export async function GET(
@@ -18,7 +19,23 @@ export async function GET(
     return unavailable();
   try {
     const client = await createServerSupabaseClient();
-    if (!client) return unavailable();
+    if (!client) {
+      const item = curatedCatalog.find(
+        (entry) => entry.slug === slug && entry.published,
+      );
+      if (
+        !item?.affiliateUrl ||
+        !isAllowedAffiliateUrl(item.affiliateUrl, item.platform)
+      )
+        return unavailable();
+      return NextResponse.redirect(item.affiliateUrl, {
+        status: 302,
+        headers: {
+          'Cache-Control': 'private, no-store',
+          'X-Robots-Tag': 'noindex, nofollow',
+        },
+      });
+    }
     const { data, error } = await client
       .from('catalog_items')
       .select('platform,affiliate_url')
@@ -28,7 +45,7 @@ export async function GET(
     if (error) throw new Error('Affiliate lookup failed');
     if (
       !data ||
-      (data.platform !== 'hotmart' && data.platform !== 'shopee') ||
+      !['hotmart', 'shopee', 'mercadolivre'].includes(data.platform) ||
       typeof data.affiliate_url !== 'string' ||
       !isAllowedAffiliateUrl(data.affiliate_url, data.platform)
     )

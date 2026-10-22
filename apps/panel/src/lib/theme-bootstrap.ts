@@ -1,0 +1,2 @@
+// Runs before paint; no interpolated user data and no dependency on React hydration.
+export const themeBootstrapScript = `(function(){var t=null;try{t=localStorage.getItem('mary-hunter:theme:v1')}catch(e){t=null}var d=t==='dark'||(t!=='light'&&window.matchMedia('(prefers-color-scheme:dark)').matches);document.documentElement.dataset.theme=d?'dark':'light';document.documentElement.style.colorScheme=d?'dark':'light';})();`;

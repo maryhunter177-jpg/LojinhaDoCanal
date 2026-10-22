@@ -10,6 +10,8 @@ import {
 import { createBrowserSupabaseClient } from '@/lib/supabase/browser';
 import { requireCatalogAdmin } from './auth';
 import './admin.css';
+import { MaryAvatar } from '@/components/mary-avatar';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 type CatalogForm = ReturnType<typeof catalogFormSchema.parse>;
 const emptyForm = (): CatalogForm =>
@@ -280,9 +282,15 @@ export default function AdminPage() {
     <main className="admin-page">
       <header className="admin-header">
         <a className="admin-brand" href="/">
-          Lojinha do Canal<span>Mary Hunter / administração</span>
+          <MaryAvatar size={44} decorative />
+          <span className="admin-brand-copy">
+            Lojinha do Canal<span>Mary Hunter / administração</span>
+          </span>
         </a>
-        <a href="/">Ver catálogo ↗</a>
+        <div className="admin-header-actions">
+          <ThemeToggle />
+          <a href="/">Ver catálogo ↗</a>
+        </div>
       </header>
       <section className="admin-intro">
         <span className="admin-eyebrow">SEU CATÁLOGO, DO SEU JEITO</span>
@@ -412,9 +420,7 @@ export default function AdminPage() {
                     <option value="hotmart">Hotmart</option>
                     <option value="shopee">Shopee</option>
                     <option value="amazon">Amazon (rascunho)</option>
-                    <option value="mercadolivre">
-                      Mercado Livre (rascunho)
-                    </option>
+                    <option value="mercadolivre">Mercado Livre</option>
                   </select>
                 </label>
                 <label>

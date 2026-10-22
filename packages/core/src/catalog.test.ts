@@ -65,6 +65,43 @@ describe('catalog validation', () => {
       }).success,
     ).toBe(false);
   });
+  it('enables Mercado Livre while Amazon remains draft-only', () => {
+    expect(
+      catalogFormSchema.safeParse({
+        ...base,
+        kind: 'product',
+        platform: 'mercadolivre',
+        affiliateUrl: 'https://meli.la/33pSvwN',
+        published: true,
+      }).success,
+    ).toBe(true);
+    for (const affiliateUrl of [
+      'http://meli.la/33pSvwN',
+      'https://meli.la.evil.test/33pSvwN',
+      'https://meli.la@evil.test/33pSvwN',
+      'https://meli.la:443/33pSvwN',
+      'https://amzn.to/example',
+    ]) {
+      expect(
+        catalogFormSchema.safeParse({
+          ...base,
+          kind: 'product',
+          platform: 'mercadolivre',
+          affiliateUrl,
+          published: true,
+        }).success,
+      ).toBe(false);
+    }
+    expect(
+      catalogFormSchema.safeParse({
+        ...base,
+        kind: 'product',
+        platform: 'amazon',
+        affiliateUrl: 'https://amzn.to/example',
+        published: true,
+      }).success,
+    ).toBe(false);
+  });
   it('requires confirmation for a nonnegative integer price', () => {
     expect(
       catalogFormSchema.safeParse({ ...base, priceCents: 100 }).success,

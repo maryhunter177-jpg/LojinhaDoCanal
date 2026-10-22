@@ -3,6 +3,8 @@ import { getStorefrontSiteUrl } from '@ofertas/core';
 import '@fontsource-variable/dm-sans';
 import '@fontsource/instrument-serif/400-italic.css';
 import './globals.css';
+import { PageThemeControl } from '@/components/theme-toggle';
+import { themeBootstrapScript } from '@/lib/theme-bootstrap';
 
 export const metadata: Metadata = {
   metadataBase: new URL(getStorefrontSiteUrl()),
@@ -21,12 +23,16 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="pt-BR">
+    <html lang="pt-BR" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeBootstrapScript }} />
+      </head>
       <body>
         <a className="skip-link" href="#conteudo">
           Pular para o conteúdo
         </a>
         {children}
+        <PageThemeControl />
       </body>
     </html>
   );

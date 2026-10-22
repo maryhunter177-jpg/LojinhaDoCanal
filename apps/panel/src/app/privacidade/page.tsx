@@ -1,10 +1,17 @@
 import Link from 'next/link';
+import { MaryAvatar } from '@/components/mary-avatar';
 export const metadata = {
   title: 'Privacidade e links de afiliada — Mary Hunter',
 };
 export default function Privacy() {
   return (
     <main className="legal-page">
+      <Link href="/" className="legal-brand">
+        <MaryAvatar size={44} decorative />
+        <span>
+          Mary Hunter<small>LOJINHA DO CANAL</small>
+        </span>
+      </Link>
       <Link className="back-link" href="/">
         ← Voltar à vitrine
       </Link>
@@ -24,7 +31,7 @@ export default function Privacy() {
         valor final e as condições válidas são sempre os apresentados na página
         de compra da plataforma.
       </p>
-      <h2>Favoritos neste dispositivo</h2>
+      <h2>Favoritos e aparência neste dispositivo</h2>
       <p>
         Ao salvar um item, o identificador dele é armazenado no armazenamento
         local do seu navegador. Não é necessário criar uma conta para navegar ou

@@ -27,7 +27,7 @@ Veja [apps/panel/README.md](apps/panel/README.md) para o passo a passo completo.
 1. Crie seu projeto Supabase e aplique `supabase/migrations/202610220001_catalog.sql` no SQL Editor.
 2. Crie seu usuário administrativo no Supabase Auth e autorize o UUID na tabela privada conforme [supabase/README.md](supabase/README.md).
 3. Copie `apps/panel/.env.example` para `apps/panel/.env.local` e informe a URL do projeto, a chave pública publishable e `SITE_URL`. Nunca use `service_role` em variáveis públicas.
-4. Entre em `/admin` para cadastrar os cursos e produtos, as imagens e seus links reais de afiliada. Hotmart e Shopee são as plataformas liberadas. Amazon e Mercado Livre aparecem como futuras opções e não podem ser publicados nesta etapa.
+4. Entre em `/admin` para cadastrar os cursos e produtos, as imagens e seus links reais de afiliada. Hotmart, Shopee e Mercado Livre são as plataformas liberadas. Para o Mercado Livre no Supabase, aplique também `supabase/migrations/202610220002_enable_mercadolivre.sql`. Amazon continua como opção futura, bloqueada para publicação até a aprovação.
 5. Na Vercel, importe o repositório com **Root Directory `apps/panel`**, framework Next.js, Node 22 e acesso aos arquivos externos do workspace. Configure as variáveis e faça o deploy.
 
 O modo de demonstração é usado apenas quando não há Supabase configurado. Quando o Supabase está configurado, erros não exibem dados de demonstração como se fossem ofertas reais. Preços são opcionais, precisam de confirmação manual e deixam de ser exibidos após 24 horas. Não há integração fictícia com APIs de marketplaces nem envio automático de mensagens.
@@ -56,3 +56,6 @@ A base do bot usa Postgres/Redis pelo Compose e os comandos `pnpm db:migrate`, `
 ## Local do projeto
 
 A cópia ativa está em `D:\GrupoVendas`. Ferramentas locais ficam em `.tools` e o cache de pacotes em `.pnpm-store`, ambos ignorados pelo Git. As cópias de trabalho criadas no C foram removidas. O original antigo em E foi preservado devido às falhas de comunicação daquele disco.
+
+
+As vitrines públicas agora são separadas: /shopee (laranja + lilás), /mercado-livre (amarelo + lilás) e /cursos. A página inicial apresenta entradas para cada loja. Fotos originais dos dez produtos do Mercado Livre, da webcam e a capa de Introdução à Programação já estão nos arquivos locais da vitrine.
