@@ -1,79 +1,58 @@
-# Bot de ofertas afiliadas
+# Lojinha do Canal — Mary Hunter
 
-Monorepo TypeScript strict com Node 22 e pnpm 10.18.3. A Fase 1 implementa o
-banco PostgreSQL com Drizzle, migrations, repositórios tipados e seed seguro.
-A estrutura essencial da Fase 0 foi criada como pré-requisito.
+Vitrine pública de cursos de programação e achadinhos para a comunidade do canal. Next.js App Router, React, Tailwind e Supabase, preparada para hospedar na Vercel. O monorepo também preserva a base anterior do bot de ofertas.
 
-## Preparar o ambiente
+## Abrir a lojinha
 
-Instale Node 22, pnpm e Docker com Compose. Na raiz do projeto:
+No Windows, com as ferramentas portáteis locais já instaladas:
 
 ```powershell
-Copy-Item .env.example .env
-pnpm install
-docker compose up -d postgres redis
-pnpm db:migrate
-pnpm db:seed
+cd D:\GrupoVendas
+.\scripts\dev.cmd
 ```
 
-Revise `.env` antes de expor serviços fora do ambiente local. Ele fica fora do
-Git. As variáveis são validadas em `packages/core/src/config.ts`. Operações de
-banco usam `DATABASE_URL` e `LOG_LEVEL`; testes de integração exigem
-`TEST_DATABASE_URL`, com permissão para criar schemas. A configuração da
-aplicação prevê `REDIS_URL`, `SHORTENER_BASE_URL`, `API_PORT`, `TIMEZONE`,
-`DRY_RUN` e os segredos opcionais listados em `.env.example`.
+Abra `http://127.0.0.1:3000`. O comando usa somente as ferramentas do projeto no D e não altera a política de execução do PowerShell. Em outra máquina, instale Node 22 e pnpm 10.18.3 e execute:
 
-O seed cria Telegram, Discord e WhatsApp para exportação manual, todos inativos,
-e `publishing_paused=true` quando ausentes. Reaplicações preservam ajustes
-existentes. Mantenha `DRY_RUN=true` durante o desenvolvimento. Nenhuma credencial
-de marketplace ou publicador é necessária nesta fase.
+```sh
+pnpm install
+pnpm --filter @ofertas/panel dev
+```
 
-## Comandos
+A página `/` é pública. `/admin` é a área de administração, com login Supabase e autorização por RLS. Busca, categorias, cursos/produtos, filtros, favoritos locais e detalhes funcionam sem cadastro de visitantes. O catálogo de prévia contém ilustrações próprias e dados identificados como demonstração, sem preços ou links de compra inventados.
+
+## Conectar o Supabase e publicar na Vercel
+
+Veja [apps/panel/README.md](apps/panel/README.md) para o passo a passo completo.
+
+1. Crie seu projeto Supabase e aplique `supabase/migrations/202610220001_catalog.sql` no SQL Editor.
+2. Crie seu usuário administrativo no Supabase Auth e autorize o UUID na tabela privada conforme [supabase/README.md](supabase/README.md).
+3. Copie `apps/panel/.env.example` para `apps/panel/.env.local` e informe a URL do projeto, a chave pública publishable e `SITE_URL`. Nunca use `service_role` em variáveis públicas.
+4. Entre em `/admin` para cadastrar os cursos e produtos, as imagens e seus links reais de afiliada. Hotmart e Shopee são as plataformas liberadas. Amazon e Mercado Livre aparecem como futuras opções e não podem ser publicados nesta etapa.
+5. Na Vercel, importe o repositório com **Root Directory `apps/panel`**, framework Next.js, Node 22 e acesso aos arquivos externos do workspace. Configure as variáveis e faça o deploy.
+
+O modo de demonstração é usado apenas quando não há Supabase configurado. Quando o Supabase está configurado, erros não exibem dados de demonstração como se fossem ofertas reais. Preços são opcionais, precisam de confirmação manual e deixam de ser exibidos após 24 horas. Não há integração fictícia com APIs de marketplaces nem envio automático de mensagens.
+
+## Validação
 
 ```sh
 pnpm typecheck
 pnpm lint
 pnpm test
-pnpm test:integration
 pnpm build
 ```
 
-`pnpm test` executa testes unitários. `pnpm test:integration` exige PostgreSQL
-real e aplica migrations em um schema temporário isolado, removido ao terminar.
-`pnpm db:generate` gera migrations após mudanças no schema;
-`pnpm db:migrate` aplica migrations e `pnpm db:seed` inicializa a configuração.
-Os dois últimos comandos leem `.env` na raiz.
+As regras RLS do catálogo também têm teste SQL real e isolado em `supabase/tests/catalog-rls.sql`; veja o README do Supabase. Os testes antigos do banco Drizzle continuam em `pnpm test:integration` e exigem `TEST_DATABASE_URL` para PostgreSQL local.
 
-`pnpm dev` executa os scripts `dev` disponíveis nos pacotes. Nesta fase ainda
-não existem serviços ou jobs de aplicação para iniciar: o comando não inicia
-API, worker ou painel. PostgreSQL e Redis são iniciados pelo Docker Compose.
+## Estrutura
 
-## Estrutura e escopo
+- `apps/panel`: vitrine pública, administração autenticada, páginas de transparência e destino seguro de links.
+- `packages/core`: configuração Zod, modelos, validação de links, filtros e regras de preços.
+- `supabase`: migration do catálogo, RLS, orientações de acesso e teste SQL.
+- `packages/db`: banco da base do bot, com nove tabelas Drizzle, migrations, repositórios e seed.
+- `apps/api`, `apps/worker`, `packages/connectors`, `packages/publishers`: estrutura reservada às fases futuras do bot.
 
-- `packages/core`: configuração central validada com Zod e base do domínio.
-- `packages/db`: nove tabelas, migrations, CRUD e seed. Veja
-  [a documentação do banco](packages/db/README.md).
-- `packages/connectors` e `packages/publishers`: estrutura para fases seguintes.
-- `apps/api`, `apps/worker` e `apps/panel`: placeholders sem serviços.
+A base do bot usa Postgres/Redis pelo Compose e os comandos `pnpm db:migrate`, `pnpm db:seed`. Seu seed mantém canais inativos e publicação pausada; `.env.example` contém as variáveis. A vitrine Next.js usa diretamente Supabase e não exige Redis para funcionar na Vercel.
 
-Conectores oficiais, avaliação, encurtador, textos, publicação, filas, painel e
-deploy ficam para as próximas fases. Nenhuma mensagem é enviada nesta fase.
-WhatsApp continuará restrito à exportação para postagem manual.
+## Local do projeto
 
-## Cópia de trabalho recuperada
-
-A cópia ativa está em `D:\GrupoVendas`. O disco USB de `E:` apresentou falhas de comunicação nos eventos 129/153 do Windows; a pasta original foi preservada.
-
-Node e pnpm portáteis estão em `.tools` (fora do Git). Neste PowerShell:
-
-```powershell
-cd D:\GrupoVendas
-. .\scripts\Use-LocalTools.ps1
-pnpm typecheck
-pnpm lint
-pnpm test
-```
-
-As ferramentas portáteis são locais e não são distribuídas no código. Em outra máquina instale Node 22 e pnpm 10.18.3. `pnpm db:generate`, `pnpm db:migrate` e `pnpm db:seed` carregam o `.env` da raiz. Os testes de integração exigem PostgreSQL real; a validação desta entrega utilizou uma instância isolada em localhost.
-
-O cache de dependências fica em .pnpm-store no próprio projeto, configurado em .npmrc. As ferramentas locais usam caminhos relativos à pasta do projeto.
+A cópia ativa está em `D:\GrupoVendas`. Ferramentas locais ficam em `.tools` e o cache de pacotes em `.pnpm-store`, ambos ignorados pelo Git. As cópias de trabalho criadas no C foram removidas. O original antigo em E foi preservado devido às falhas de comunicação daquele disco.

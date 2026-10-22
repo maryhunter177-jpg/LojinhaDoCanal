@@ -102,3 +102,63 @@ export function loadDatabaseConfig(
 ) {
   return databaseConfigSchema.parse(env);
 }
+
+const optionalStorefrontUrl = z.preprocess(
+  (value) => (value === '' ? undefined : value),
+  httpUrl
+    .refine((value) => {
+      try {
+        const url = new URL(value);
+        return !url.username && !url.password;
+      } catch {
+        return false;
+      }
+    }, 'URLs must not include credentials')
+    .optional(),
+);
+const optionalDeploymentHost = z.preprocess(
+  (value) => (value === '' ? undefined : value),
+  z
+    .string()
+    .max(253)
+    .regex(
+      /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/i,
+      'Use a hostname without scheme, credentials, path or port',
+    )
+    .optional(),
+);
+export const storefrontConfigSchema = z
+  .object({
+    NEXT_PUBLIC_SUPABASE_URL: optionalStorefrontUrl,
+    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: optionalSecret,
+    SITE_URL: optionalStorefrontUrl,
+    VERCEL_PROJECT_PRODUCTION_URL: optionalDeploymentHost,
+    VERCEL_URL: optionalDeploymentHost,
+    LOG_LEVEL: databaseConfigSchema.shape.LOG_LEVEL,
+  })
+  .superRefine((config, context) => {
+    if (
+      Boolean(config.NEXT_PUBLIC_SUPABASE_URL) !==
+      Boolean(config.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY)
+    ) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Configure Supabase URL and publishable key together',
+        path: ['NEXT_PUBLIC_SUPABASE_URL'],
+      });
+    }
+  });
+export type StorefrontConfig = z.infer<typeof storefrontConfigSchema>;
+export function loadStorefrontConfig(
+  env: Record<string, string | undefined> = process.env,
+): StorefrontConfig {
+  return storefrontConfigSchema.parse(env);
+}
+
+export function getStorefrontSiteUrl(
+  config: StorefrontConfig = loadStorefrontConfig(),
+): string {
+  if (config.SITE_URL) return config.SITE_URL;
+  const host = config.VERCEL_PROJECT_PRODUCTION_URL ?? config.VERCEL_URL;
+  return host ? 'https://' + host.toLowerCase() : 'http://localhost:3000';
+}

@@ -5,6 +5,8 @@ export default tseslint.config(
     ignores: [
       '**/node_modules/**',
       '**/dist/**',
+      '**/.next/**',
+      '**/next-env.d.ts',
       '.tools/**',
       'packages/db/migrations/meta/**',
     ],

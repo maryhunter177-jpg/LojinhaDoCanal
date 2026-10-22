@@ -8,3 +8,11 @@ coverage/
 .tools/
 .pnpm-store/
 *.log
+
+*.tsbuildinfo
+playwright-report/
+test-results/
+
+.artifacts/
+
+apps/panel/next-env.d.ts
